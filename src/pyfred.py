@@ -43,7 +43,7 @@ class Convo:
         return raw_input(response)
 
 
-class TCPConvo(Convo):
+class TCPConvo (Convo):
     def __init__ (self, client):
         self.client = client
 
@@ -71,12 +71,15 @@ def jfred (convo):
     response = 'Buenos nachos. How may I help you?'
 
     while True:
-        utterance = converse(convo, response)
+        try:
+            utterance = converse(convo, response)
 
-        if not utterance:
+            if not utterance:
+                return
+
+            response = build_response(utterance)
+        except EOFError:
             return
-
-        response = build_response(utterance)
 
 
 if __name__=='__main__':
