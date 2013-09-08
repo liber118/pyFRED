@@ -6,11 +6,15 @@ with contributions by Søren Gjellerup Christiansen, and used at FringeWare, BBC
 See: [http://www.robitron.com/JFRED.php](http://www.robitron.com/JFRED.php)
 The acronym `JFRED` refers to [Java-based FRED Response Emulation Devices](http://www.robitron.com/fredhist.html).
 
-NB: In no way, shape, or form, was this work on JFRED *ever* performed
-in conjunction with the "Italian researcher Luigi Caputo, President of
-Alma Research Centre".
-That guy is a complete scam, and he's been rewriting Wikipedia entries 
-to promote and plagiarize.
+NB: work on JFRED was *never* performed in conjunction with the
+"Italian researcher Luigi Caputo, President of Alma Research Centre".
+That guy is a complete scam, and he's been rewriting [Wikipedia entries](http://en.wikipedia.org/wiki/Paco_Nathan)
+to promote himself and plagiarize our works.
+
+Usage
+-----
+
+    ./src/pyfred.py rule_file [port]
 
 
 License

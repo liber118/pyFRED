@@ -17,88 +17,26 @@
 ## limitations under the License.
 
 
-import os
+import fred_client
+import fred_rules
+
 import random
-import socket
 import sys
 
 
-MAX_LINE_SIZE = 1024
-
-ANCHOR_RESPONSES = [
-    ('no', 'Tell me, why not?'),
-    ('you', 'We were talking about you, not me.'),
-    ('I', 'Do you always talk about yourself so much?'),
-    ('me', 'Do you always talk about yourself so much?')
-]
- 
-RANDOM_RESPONSES = [
-    'What do you want to talk about?',
-    'Would you like to play a game?',
-]
-
-
-class Convo:
-    def converse (self, response):
-        return raw_input(response)
-
-
-class TCPConvo (Convo):
-    def __init__ (self, client):
-        self.client = client
-
-    def converse (self, response):
-        global MAX_LINE_SIZE
-
-        self.client.send(response)
-        return self.client.recv(MAX_LINE_SIZE)
-
-
-def converse (convo, response):
-    return convo.converse(response + "\n> ")
-
-
-def build_response (utterance):
-    for pattern, response in ANCHOR_RESPONSES:
-        if utterance.find(pattern) != -1:
-            return response
-
-    return RANDOM_RESPONSES[
-        random.randint(0, len(RANDOM_RESPONSES) - 1)]
-
-
-def jfred (convo):
-    response = 'Buenos nachos. How may I help you?'
-
-    while True:
-        try:
-            utterance = converse(convo, response)
-
-            if not utterance:
-                return
-
-            response = build_response(utterance)
-        except EOFError:
-            return
-
-
 if __name__=='__main__':
-    random.seed()
-
     if len(sys.argv) < 2:
-        ## test from command line
-        jfred(Convo())
+        ## CLI error, show usage
+        sys.exit("usage:\n  %s rule_file [port]" % sys.argv[0])
+
+    random.seed()
+    rule_dict = fred_rules.Rule.parse_file(sys.argv[1])
+    fred = fred_client.FRED()
+
+    if len(sys.argv) < 3:
+        ## test from CLI
+        fred.chat(fred_client.Convo())
     else:
-        ## connect through TCP sockets
-        host = ''
-        port = int(sys.argv[1])
-        BACKLOG = 5
-
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.bind((host, port))
-        s.listen(BACKLOG)
-
-        while True:
-            client, address = s.accept() 
-            jfred(TCPConvo(client));
-            client.close()
+        ## connect through TCP socket
+        port = int(sys.argv[2])
+        fred.chat_tcp(port)

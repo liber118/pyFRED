@@ -20,15 +20,22 @@
 import re
 import sys
 
-RULE_PAT = re.compile("(\S+)\:\s+(\S+)")
-RULE_SET = {}
-
 
 ######################################################################
 ## rule classes
 ######################################################################
 
+class ParseError (Exception):
+    def __init__ (self, value):
+        self.value = value
+
+    def __str__ (self):
+        return repr(self.value)
+
+
 class Rule (object):
+    rule_pat = re.compile("(\S+)\:\s+(\S+)")
+
     def __init__ (self):
         self.name = None
         self.vector = None
@@ -40,6 +47,88 @@ class Rule (object):
         return self
 
 
+    @staticmethod
+    def parse_lines (rule_lines):
+        """
+        parse the raw text lines for one JFRED rule
+        """
+
+        first_line = rule_lines.pop(0)
+        m = Rule.rule_pat.match(first_line)
+
+        if not m:
+            raise ParseError("unrecognized rule format: " + first_line)
+
+        (kind, name) = m.group(1).lower().strip(), m.group(2).lower().strip()
+
+        if not kind in ["intro", "action", "response", "regex", "fuzzy"]:
+            raise ParseError("bad rule type: " + kind)
+
+        vector = []
+        attrib = {}
+
+        for line in rule_lines:
+            m = Rule.rule_pat.match(line)
+
+            if m:
+                (elem, value) = m.group(1).lower().strip(), m.group(2).strip()
+
+                if not elem in ["priority", "requires", "equals", "bind", "invokes", "url", "next", "repeat", "expect"]:
+                    raise ParseError("bad rule elem: " + elem)
+                else:
+                    attrib[elem] = value
+            else:
+                vector.append(line)
+
+        rule = None
+
+        if kind == "intro":
+            rule = IntroRule().parse(name, vector, attrib)
+        elif kind == "action":
+            rule = ActionRule().parse(name, vector, attrib)
+        elif kind == "response":
+            rule = ResponseRule().parse(name, vector, attrib)
+        elif kind == "regex":
+            rule = RegexRule().parse(name, vector, attrib)
+        elif kind == "fuzzy":
+            rule = FuzzyRule().parse(name, vector, attrib)
+
+        return rule
+    
+
+    @staticmethod
+    def parse_file (filename):
+        """
+        read a JFRED rule file, return a rule dictionary
+        """
+
+        rule_dict = {}
+
+        with open(filename, "r") as f:
+            rule_lines = []
+
+            for line in f:
+                line = line.strip()
+
+                if line.startswith("#"):
+                    pass
+                elif len(line) == 0:
+                    if len(rule_lines) > 0:
+                        try:
+                            rule = Rule.parse_lines(rule_lines)
+                        except ParseError:
+                            print rule_lines
+                            break
+                        else:
+                            rule_dict[rule.name] = rule
+
+                    rule_lines = []
+                else:
+                    rule_lines.append(line)
+
+        return rule_dict
+
+
 class IntroRule (Rule):
     def __init__ (self):
         pass
@@ -48,7 +137,7 @@ class IntroRule (Rule):
         super(IntroRule, self).parse(name, vector, attrib)
 
         if len(attrib) > 0:
-            raise Exception("unrecognized rule element: " + str(attrib))
+            raise ParseError("unrecognized rule element: " + str(attrib))
 
         return self
 
@@ -95,7 +184,7 @@ class ActionRule (Rule):
             del attrib["url"]
 
         if len(attrib) > 0:
-            raise Exception("unrecognized rule element: " + str(attrib))
+            raise ParseError("unrecognized rule element: " + str(attrib))
 
         return self
 
@@ -108,7 +197,7 @@ class ResponseRule (Rule):
         super(ResponseRule, self).parse(name, vector, attrib)
 
         if len(attrib) > 0:
-            raise Exception("unrecognized rule element: " + str(attrib))
+            raise ParseError("unrecognized rule element: " + str(attrib))
 
         return self
 
@@ -125,7 +214,7 @@ class RegexRule (Rule):
             del attrib["invokes"]
 
         if len(attrib) > 0:
-            raise Exception("unrecognized rule element: " + str(attrib))
+            raise ParseError("unrecognized rule element: " + str(attrib))
 
         return self
 
@@ -139,7 +228,7 @@ class FuzzyRule (Rule):
         super(FuzzyRule, self).parse(name, vector, attrib)
 
         if len(attrib) > 0:
-            raise Exception("unrecognized rule element: " + str(attrib))
+            raise ParseError("unrecognized rule element: " + str(attrib))
 
         for line in self.vector:
             weight, rule = line.split("\t")
@@ -155,74 +244,6 @@ class FuzzyRule (Rule):
         return self
 
 
-######################################################################
-## parsing methods
-######################################################################
-
-def parse_rule (rule_lines):
-    global RULE_PAT, RULE_SET
-
-    first_line = rule_lines.pop(0)
-    m = RULE_PAT.match(first_line)
-
-    if not m:
-        raise Exception("unrecognized rule format: " + first_line)
-
-    (kind, name) = m.group(1).lower().strip(), m.group(2).lower().strip()
-
-    if not kind in ["intro", "action", "response", "regex", "fuzzy"]:
-        raise Exception("bad rule type: " + kind)
-
-    vector = []
-    attrib = {}
-
-    for line in rule_lines:
-        m = RULE_PAT.match(line)
-
-        if m:
-            (elem, value) = m.group(1).lower().strip(), m.group(2).strip()
-
-            if not elem in ["priority", "requires", "equals", "bind", "invokes", "url", "next", "repeat", "expect"]:
-                raise Exception("bad rule elem: " + elem)
-            else:
-                attrib[elem] = value
-        else:
-            vector.append(line)
-
-    rule = None
-
-    if kind == "intro":
-        rule = IntroRule().parse(name, vector, attrib)
-    elif kind == "action":
-        rule = ActionRule().parse(name, vector, attrib)
-    elif kind == "response":
-        rule = ResponseRule().parse(name, vector, attrib)
-    elif kind == "regex":
-        rule = RegexRule().parse(name, vector, attrib)
-    elif kind == "fuzzy":
-        rule = FuzzyRule().parse(name, vector, attrib)
-
-    if rule:
-        RULE_SET[rule.name] = rule
-    
-
-def read_rules (filename):
-    with open(filename, "r") as f:
-        rule_lines = []
-
-        for line in f:
-            line = line.strip()
-
-            if line.startswith("#"):
-                pass
-            elif len(line) == 0:
-                if len(rule_lines) > 0:
-                    parse_rule(rule_lines)
-
-                rule_lines = []
-            else:
-                rule_lines.append(line)
-
-
 if __name__=='__main__':
-    read_rules(sys.argv[1])
+    rule_dict = Rule.parse_file(sys.argv[1])
+    print len(rule_dict)
