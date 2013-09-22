@@ -103,6 +103,7 @@ class Rule (object):
         """
 
         rule_dict = {}
+        first_action = None
 
         with open(filename, "r") as f:
             rule_lines = []
@@ -120,13 +121,16 @@ class Rule (object):
                             print rule_lines
                             break
                         else:
+                            if not first_action and isinstance(rule, ActionRule):
+                                first_action = rule
+
                             rule_dict[rule.name] = rule
 
                     rule_lines = []
                 else:
                     rule_lines.append(line)
 
-        return rule_dict
+        return rule_dict, first_action
 
 
 class IntroRule (Rule):
@@ -245,5 +249,6 @@ class FuzzyRule (Rule):
 
 
 if __name__=='__main__':
-    rule_dict = Rule.parse_file(sys.argv[1])
+    rule_dict, first_action = Rule.parse_file(sys.argv[1])
     print len(rule_dict)
+    print first_action

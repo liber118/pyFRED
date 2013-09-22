@@ -55,6 +55,11 @@ class FRED (object):
     ]
 
 
+    def __init__ (self, rule_dict, first_action):
+        self.rule_dict = rule_dict
+        self.first_action = first_action
+
+
     def build_response (self, utterance):
         for pattern, response in FRED.ANCHOR_RESPONSES:
             if utterance.find(pattern) != -1:
@@ -97,4 +102,4 @@ class FRED (object):
 
 
 if __name__=='__main__':
-    FRED().chat(Convo())
+    FRED(None, None).chat(Convo())
