@@ -30,8 +30,7 @@ if __name__=='__main__':
         sys.exit("usage:\n  %s rule_file [port]" % sys.argv[0])
 
     random.seed()
-    rule_dict, first_action = fred_rules.Rule.parse_file(sys.argv[1])
-    fred = fred_client.FRED(rule_dict, first_action)
+    fred = fred_client.FRED(fred_rules.Rule.parse_file(sys.argv[1]))
 
     if len(sys.argv) < 3:
         ## test from CLI

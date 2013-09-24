@@ -55,9 +55,8 @@ class FRED (object):
     ]
 
 
-    def __init__ (self, rule_dict, first_action):
-        self.rule_dict = rule_dict
-        self.first_action = first_action
+    def __init__ (self, rules):
+        self.rules = rules
 
 
     def build_response (self, utterance):
@@ -70,7 +69,7 @@ class FRED (object):
 
 
     def chat (self, convo):
-        response = 'Buenos nachos. How may I help you?'
+        response = self.rules.fire_first()
 
         while True:
             try:
@@ -81,6 +80,7 @@ class FRED (object):
             except EOFError:
                 break
             else:
+                self.rules.choose_rule()
                 response = self.build_response(utterance)
 
 

@@ -17,6 +17,7 @@
 ## limitations under the License.
 
 
+import random
 import re
 import sys
 
@@ -33,18 +34,36 @@ class ParseError (Exception):
         return repr(self.value)
 
 
+class Rules (object):
+    def __init__ (self, rule_dict, first_action):
+        self.rule_dict = rule_dict
+        self.first_action = first_action
+
+    def fire_first (self):
+        return self.first_action.fire()
+
+    def choose_rule (self):
+        rule_list = [r for r in self.rule_dict.values() if isinstance(r, ActionRule) and (r.repeat or r.count < 1)]
+
+        return random.choice(rule_list).fire()
+
+
 class Rule (object):
     rule_pat = re.compile("(\S+)\:\s+(\S+)")
 
     def __init__ (self):
         self.name = None
         self.vector = None
+        self.count = 0
 
     def parse (self, name, vector, attrib):
         self.name = name.lower()
         self.vector = vector
-
         return self
+
+    def fire (self):
+        self.count += 1
+        return random.choice(self.vector)
 
 
     @staticmethod
@@ -99,7 +118,7 @@ class Rule (object):
     @staticmethod
     def parse_file (filename):
         """
-        read a JFRED rule file, return a rule dictionary
+        read a JFRED rule file, return a Rules object 
         """
 
         rule_dict = {}
@@ -118,7 +137,7 @@ class Rule (object):
                         try:
                             rule = Rule.parse_lines(rule_lines)
                         except ParseError:
-                            print rule_lines
+                            print "ERROR", rule_lines
                             break
                         else:
                             if not first_action and isinstance(rule, ActionRule):
@@ -130,12 +149,12 @@ class Rule (object):
                 else:
                     rule_lines.append(line)
 
-        return rule_dict, first_action
+        return Rules(rule_dict, first_action)
 
 
 class IntroRule (Rule):
     def __init__ (self):
-        pass
+        super(IntroRule, self).__init__()
 
     def parse (self, name, vector, attrib):
         super(IntroRule, self).parse(name, vector, attrib)
@@ -148,6 +167,7 @@ class IntroRule (Rule):
 
 class ActionRule (Rule):
     def __init__ (self):
+        super(ActionRule, self).__init__()
         self.priority = 0
         self.repeat = False
         self.requires = None
@@ -195,7 +215,7 @@ class ActionRule (Rule):
 
 class ResponseRule (Rule):
     def __init__ (self):
-        pass
+        super(ResponseRule, self).__init__()
 
     def parse (self, name, vector, attrib):
         super(ResponseRule, self).parse(name, vector, attrib)
@@ -208,6 +228,7 @@ class ResponseRule (Rule):
 
 class RegexRule (Rule):
     def __init__ (self):
+        super(RegexRule, self).__init__()
         self.invokes = None
 
     def parse (self, name, vector, attrib):
@@ -225,6 +246,7 @@ class RegexRule (Rule):
 
 class FuzzyRule (Rule):
     def __init__ (self):
+        super(FuzzyRule, self).__init__()
         self.weights = []
         self.members = []
 
