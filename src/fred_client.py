@@ -55,8 +55,9 @@ class FRED (object):
     ]
 
 
-    def __init__ (self, rules):
+    def __init__ (self, rules, lang):
         self.rules = rules
+        self.lang = lang
 
 
     def build_response (self, utterance):
@@ -80,7 +81,11 @@ class FRED (object):
             except EOFError:
                 break
             else:
-                self.rules.choose_rule()
+                stimulus = self.lang.parse(utterance)
+
+                print stimulus
+                print self.rules.choose_rule(stimulus)
+
                 response = self.build_response(utterance)
 
 

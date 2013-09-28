@@ -17,28 +17,31 @@
 ## limitations under the License.
 
 
-import fred_client
-import fred_lang
-import fred_rules
+import re
 
-import random
-import sys
+
+######################################################################
+## natural language classes
+######################################################################
+
+class Language (object):
+    word_pat = re.compile("([\w\d]+)")
+
+    def __init__ (self):
+        pass
+
+    def parse (self, utterance):
+        v = []
+
+        for token in utterance.split(" "):
+            m = Language.word_pat.match(token)
+
+            if m:
+                v.append(m.group(1).lower().strip())
+
+        return v
 
 
 if __name__=='__main__':
-    if len(sys.argv) < 2:
-        ## CLI error, show usage
-        sys.exit("usage:\n  %s rule_file [port]" % sys.argv[0])
-
-    random.seed()
-    rules = fred_rules.Rule.parse_file(sys.argv[1])
-    lang = fred_lang.Language()
-    fred = fred_client.FRED(rules, lang)
-
-    if len(sys.argv) < 3:
-        ## test from CLI
-        fred.chat(fred_client.Convo())
-    else:
-        ## connect through TCP socket
-        port = int(sys.argv[2])
-        fred.chat_tcp(port)
+    lang = Language()
+    print lang.parse("Hi there Fred.")

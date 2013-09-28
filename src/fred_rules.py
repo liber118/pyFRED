@@ -39,13 +39,89 @@ class Rules (object):
         self.rule_dict = rule_dict
         self.first_action = first_action
 
+        # 1. create an inverted index for the fuzzy rules
+
+        self.fuzzy_sets = {}
+
+        for (name, r) in self.rule_dict.items():
+            if isinstance(r, FuzzyRule):
+                self.fuzzy_sets[name] = map(lambda x: (self.rule_dict[r.members[x]], r.weights[x]), range(0, len(r.members)))
+
+        # 2. randomly shuffle the order of responses within all the
+        # action rules, and establish priority rankings
+
+        self.action_rules = [r for r in self.rule_dict.values() if isinstance(r, ActionRule) and (r.repeat or r.count < 1)]
+
+        # 3. randomly shuffle the intro rule(s)
+
+        self.intro_rules = [r for r in self.rule_dict.values() if isinstance(r, IntroRule)]
+
+        # 4. create an inverted index for the regex rules
+
+        self.regex_phrases = {}
+
+        for r in self.rule_dict.values():
+            if isinstance(r, RegexRule):
+                try:
+                    invoked = set(map(lambda x: self.rule_dict[x], r.invokes.split(" ")))
+
+                    for phrase in r.vector:
+                        self.regex_phrases[phrase] = invoked
+
+                except KeyError, e:
+                    print "ERROR: references unknown action rule", e
+                    sys.exit(1)
+
+
     def fire_first (self):
         return self.first_action.fire()
 
-    def choose_rule (self):
-        rule_list = [r for r in self.rule_dict.values() if isinstance(r, ActionRule) and (r.repeat or r.count < 1)]
 
-        return random.choice(rule_list).fire()
+    def choose_rule (self, stimulus):
+        stimulus_phrase = " ".join(stimulus)
+        rule_set = set([])
+        response = ""
+
+        # 1. select an optional introduction (p <= 0.03)
+
+        if random.random < 0.03:
+            response = choice(self.intro_rules).fire()
+
+        # 2. "Fred.chooseReply()" select a target response template
+        # based on key words from the input stream
+        #   2.1 regex matches => invoked action rules r=100
+
+        for (phrase, rules) in self.regex_phrases.items():
+            if phrase in stimulus_phrase:
+                rule_set = rule_set.union(rules)
+
+        #   2.2 fuzzy rules => invoked action rules
+
+        for (fuzzy, rules) in self.fuzzy_sets.items():
+            if fuzzy in stimulus_phrase:
+                print "FOUND!", fuzzy, rules
+
+        #   2.3 action rules r=100
+
+        if len(rule_set) > 0:
+            selected_rule = random.choice(list(rule_set))
+        else:
+            selected_rule = random.choice(self.action_rules)
+
+        # 3. test for insertion points in the selected response
+        # template
+
+        # 4. map the input verb tense and possessives/contractions...
+        # NB: some kind of context-free grammar might work better here
+
+        # 5. decide whether the current query differs from the
+        # previous one...
+
+        # 6. "Fred.logChat()" keep track of what's been said
+
+        response += selected_rule.fire()
+
+        return response
 
 
 class Rule (object):
@@ -137,8 +213,8 @@ class Rule (object):
                         try:
                             rule = Rule.parse_lines(rule_lines)
                         except ParseError:
-                            print "ERROR", rule_lines
-                            break
+                            print "ERROR: cannot parse rule description", rule_lines
+                            sys.exit(1)
                         else:
                             if not first_action and isinstance(rule, ActionRule):
                                 first_action = rule
@@ -237,6 +313,9 @@ class RegexRule (Rule):
         if "invokes" in attrib:
             self.invokes = attrib["invokes"].lower()
             del attrib["invokes"]
+
+        if not self.invokes:
+            raise ParseError("regex rule must invoke: " + name)
 
         if len(attrib) > 0:
             raise ParseError("unrecognized rule element: " + str(attrib))
