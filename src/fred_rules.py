@@ -137,22 +137,29 @@ class Rules (object):
                 if rule.repeat or rule.count < 1:
                     fuzzy_union.add_rule(rule, 1.0)
 
-        # select a target response template
+        # select an action rule to use for a response template
 
         selected_rule, weight = fuzzy_union.select_rule()
+        response_template = selected_rule.fire()
 
-        # 3. test for insertion points in the selected response
-        # template
+        # 3. test for "bind" points in the selected response template
 
-        # 4. map the input verb tense and possessives/contractions...
-        # NB: some kind of context-free grammar might work better here
+        if selected_rule.bind and response_template.find("[]") > 0:
+            pos = stimulus.index(selected_rule.bind) + 1
+            fragment = stimulus[pos:]
 
-        response += selected_rule.fire()
+            # 3.1 invert the verb tense, possessives, contractions, negations...
+            # NB: some kind of context-free grammar might work better here
 
-        # 5. decide whether the current query differs from the
+            replacement = " ".join(self.lang.invert(fragment))
+            response_template = response_template.replace("[]", replacement)
+
+        response += response_template
+
+        # 4. decide whether the current query differs from the
         # previous one...
 
-        # 6. "Fred.logChat()" keep track of what's been said
+        # 5. "Fred.logChat()" keep track of what's been said
 
         return response, selected_rule, weight
 
@@ -322,6 +329,11 @@ class ActionRule (Rule):
 
         if len(attrib) > 0:
             raise ParseError("unrecognized rule element: " + str(attrib))
+
+
+        if not self.bind:
+            # correct for missing "bind:" attributes
+            self.bind = self.name
 
         return self
 

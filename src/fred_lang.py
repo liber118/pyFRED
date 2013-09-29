@@ -22,10 +22,29 @@ import re
 
 ######################################################################
 ## natural language classes
+#
+# contraIn = { "m", "d", "s", "ll", "re", "ve" };
+# contraOut = { "am", "would", "is", "will", "are", "have" };
+# negateIn = { "can", "don", "didn", "isn", "aren", "won", "shan", "couldn", "wouldn", "shouldn", "haven", "doesn" };
+# negateOut = { "can", "do", "did", "is", "are", "will", "shall", "could", "would", "should", "have", "does" };
 ######################################################################
 
 class Language (object):
     word_pat = re.compile("([\w\d]+)")
+
+    tense = { "you": "we robots",
+              "i": "you",
+              "me": "you",
+              "am": "are",
+              "are": "are",
+              "my": "your",
+              "your": "our",
+              "yourself": "ourself",
+              "myself": "yourself",
+              "mine": "yours",
+              "yours": "ours",
+              "us": "y'all"
+              }
 
     def __init__ (self):
         pass
@@ -40,6 +59,18 @@ class Language (object):
                 v.append(m.group(1).lower().strip())
 
         return tuple(v)
+
+
+    def invert (self, fragment):
+        inversion = []
+
+        for word in fragment:
+            if word in Language.tense:
+                inversion.append(Language.tense[word])
+            else:
+                inversion.append(word)
+
+        return inversion
 
 
 if __name__=='__main__':

@@ -24,6 +24,7 @@ import random
 
 ######################################################################
 ## fuzzy logic support
+## this implements rule selection, based on a flavor of fuzzy ranking
 ######################################################################
 
 class FuzzyUnion (object):
