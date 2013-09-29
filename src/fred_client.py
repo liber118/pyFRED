@@ -17,7 +17,6 @@
 ## limitations under the License.
 
 
-import random
 import socket
 
 
@@ -42,35 +41,13 @@ class TCPConvo (Convo):
 
 
 class FRED (object):
-    ANCHOR_RESPONSES = [
-        ('no', 'Tell me, why not?'),
-        ('you', 'We were talking about you, not me.'),
-        ('I', 'Do you always talk about yourself so much?'),
-        ('me', 'Do you always talk about yourself so much?')
-    ]
- 
-    RANDOM_RESPONSES = [
-        'What do you want to talk about?',
-        'Would you like to play a game?',
-    ]
-
-
     def __init__ (self, rules, lang):
         self.rules = rules
         self.lang = lang
 
 
-    def build_response (self, utterance):
-        for pattern, response in FRED.ANCHOR_RESPONSES:
-            if utterance.find(pattern) != -1:
-                return response
-
-        return FRED.RANDOM_RESPONSES[
-            random.randint(0, len(FRED.RANDOM_RESPONSES) - 1)]
-
-
     def chat (self, convo):
-        response = self.rules.fire_first()
+        response = self.rules.choose_first()
 
         while True:
             try:
@@ -82,11 +59,10 @@ class FRED (object):
                 break
             else:
                 stimulus = self.lang.parse(utterance)
-
                 print stimulus
-                print self.rules.choose_rule(stimulus)
 
-                response = self.build_response(utterance)
+                response, selected_rule, weight = self.rules.choose_rule(stimulus)
+                print " (", selected_rule.name, weight, ")"
 
 
     def chat_tcp (self, port):
