@@ -41,7 +41,7 @@ class Rules (object):
         self.rule_dict = rule_dict
         self.first_action = first_action
 
-        # 1. create an inverted index for the fuzzy rules
+        # 1. create an inverted index for the fuzzy sets
 
         self.fuzzy_sets = {}
 
@@ -49,7 +49,7 @@ class Rules (object):
             self.fuzzy_sets[name] = map(lambda x: (self.rule_dict[r.members[x]], r.weights[x]), range(0, len(r.members)))
 
         # 2. randomly shuffle the order of responses within all the
-        # action rules, and establish priority rankings
+        # action rules, and establish priority rankings (later)
 
         self.action_rules = [r for r in self.rule_dict.values() if isinstance(r, ActionRule)]
 
@@ -57,7 +57,7 @@ class Rules (object):
 
         self.intro_rules = [r for r in self.rule_dict.values() if isinstance(r, IntroRule)]
 
-        # 4. create an inverted index for the regex rules
+        # 4. create an inverted index for the regex phrases
 
         self.regex_phrases = {}
 
@@ -91,7 +91,7 @@ class Rules (object):
 
         # 2. "Fred.chooseReply()"
         # based on key words from the input stream
-        #   2.1 regex matches => invoked action rules r=100
+        #   2.1 regex matches => invoked action rules r=200
 
         for (phrase, rules) in self.regex_phrases.items():
             if phrase in stimulus_phrase:
