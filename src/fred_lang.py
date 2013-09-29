@@ -39,7 +39,7 @@ class Language (object):
             if m:
                 v.append(m.group(1).lower().strip())
 
-        return v
+        return tuple(v)
 
 
 if __name__=='__main__':

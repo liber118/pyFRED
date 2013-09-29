@@ -26,11 +26,6 @@ import random
 ## fuzzy logic support
 ######################################################################
 
-def fuzzy_sort (x):
-    [name, [rule, weight]] = x
-    return weight, rule.priority
-
-
 class FuzzyUnion (object):
     def __init__ (self):
         self.rule_set = {}
@@ -46,10 +41,20 @@ class FuzzyUnion (object):
             self.rule_set[rule.name] = [rule, prev_weight + weight]
 
 
+    @staticmethod
+    def fuzzy_sort (x):
+        [name, [rule, weight]] = x
+        return weight, rule.priority
+
+
     def select_rule (self):
         # sort descending based on weight, priority
 
-        sorted_rules = sorted(self.rule_set.items(), key=lambda x: fuzzy_sort(x), reverse=True)
+        sorted_rules = sorted(self.rule_set.items(),
+                              key=lambda x: FuzzyUnion.fuzzy_sort(x),
+                              reverse=True
+                              )
+
         weight_dist = map(lambda x: x[1][1], sorted_rules)
         tot_sum = sum(weight_dist)
 

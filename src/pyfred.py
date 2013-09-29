@@ -31,9 +31,9 @@ if __name__=='__main__':
         sys.exit("usage:\n  %s rule_file [port]" % sys.argv[0])
 
     random.seed()
-    rules = fred_rules.Rule.parse_file(sys.argv[1])
     lang = fred_lang.Language()
-    fred = fred_client.FRED(rules, lang)
+    rules = fred_rules.Rule.parse_file(lang, sys.argv[1])
+    fred = fred_client.FRED(rules)
 
     if len(sys.argv) < 3:
         ## test from CLI

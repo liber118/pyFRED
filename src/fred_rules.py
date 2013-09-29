@@ -37,7 +37,8 @@ class ParseError (Exception):
 
 
 class Rules (object):
-    def __init__ (self, rule_dict, first_action, fuzzy_dict):
+    def __init__ (self, lang, rule_dict, first_action, fuzzy_dict):
+        self.lang = lang
         self.rule_dict = rule_dict
         self.first_action = first_action
 
@@ -67,7 +68,8 @@ class Rules (object):
                     invoked = set(map(lambda x: self.rule_dict[x], r.invokes.split(" ")))
 
                     for phrase in r.vector:
-                        self.regex_phrases[phrase] = invoked
+                        phrase_tuple = tuple(self.lang.parse(phrase))
+                        self.regex_phrases[phrase_tuple] = invoked
 
                 except KeyError, e:
                     print "ERROR: references unknown action rule", e
@@ -78,8 +80,31 @@ class Rules (object):
         return self.first_action.fire()
 
 
-    def choose_rule (self, stimulus):
-        stimulus_phrase = " ".join(stimulus)
+    @staticmethod
+    def find_sublist (sub, bigger):
+        # kudos to nosklo
+        # http://stackoverflow.com/questions/2250633/python-find-a-list-within-members-of-another-listin-order
+
+        if not bigger:
+            return -1
+        if not sub:
+            return 0
+
+        first, remainder = sub[0], sub[1:]
+        pos = 0
+
+        try:
+            while True:
+                pos = bigger.index(first, pos) + 1
+    
+                if not remainder or bigger[pos:pos+len(remainder)] == remainder:
+                    return pos
+        except ValueError:
+            return -1
+
+
+    def choose_rule (self, utterance):
+        stimulus = self.lang.parse(utterance)
         fuzzy_union = fred_fuzzy.FuzzyUnion()
 
         # 1. select an optional introduction (p <= 0.03)
@@ -94,14 +119,14 @@ class Rules (object):
         #   2.1 regex matches => invoked action rules r=200
 
         for (phrase, rules) in self.regex_phrases.items():
-            if phrase in stimulus_phrase:
+            if Rules.find_sublist(phrase, stimulus) >= 0:
                 for rule in rules:
                     fuzzy_union.add_rule(rule, 2.0)
 
         #   2.2 fuzzy rules => invoked action rules
 
         for (fuzzy_term, members) in self.fuzzy_sets.items():
-            if fuzzy_term in stimulus_phrase:
+            if fuzzy_term in stimulus:
                 for rule, weight in members:
                     fuzzy_union.add_rule(rule, weight)
 
@@ -200,7 +225,7 @@ class Rule (object):
     
 
     @staticmethod
-    def parse_file (filename):
+    def parse_file (lang, filename):
         """
         read a JFRED rule file, return a Rules object 
         """
@@ -237,7 +262,7 @@ class Rule (object):
                 else:
                     rule_lines.append(line)
 
-        return Rules(rule_dict, first_action, fuzzy_dict)
+        return Rules(lang, rule_dict, first_action, fuzzy_dict)
 
 
 class IntroRule (Rule):

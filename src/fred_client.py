@@ -41,9 +41,8 @@ class TCPConvo (Convo):
 
 
 class FRED (object):
-    def __init__ (self, rules, lang):
+    def __init__ (self, rules):
         self.rules = rules
-        self.lang = lang
 
 
     def chat (self, convo):
@@ -58,10 +57,9 @@ class FRED (object):
             except EOFError:
                 break
             else:
-                stimulus = self.lang.parse(utterance)
-                print stimulus
+                print utterance
 
-                response, selected_rule, weight = self.rules.choose_rule(stimulus)
+                response, selected_rule, weight = self.rules.choose_rule(utterance)
                 print " (", selected_rule.name, weight, ")"
 
 
